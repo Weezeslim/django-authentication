@@ -1,0 +1,111 @@
+name: Deploy Application
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  app_deployment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository Checkout
+        uses: actions/checkout@v2
+      
+      - name: Python setup
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.7.15'
+
+      - name: Dependecies installation
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Migrations for django
+        run: python manage.py migrate
+
+      - name: Run django application
+        run: python manage.py runserver --noreload 0.0.0.0:8000 &
+
+      - name: Wait for server to start
+        run: sleep 10s
+        
+      - name: Install psutil
+        run: pip install psutil
+        
+      - name: obtaining the name of the process
+        id: application_pid
+        run: |
+          pid=$(pgrep -f 'python manage.py runserver')
+          echo ":: set-output name=application_process_id::$pid"
+ 
+          
+
+      # step to access the action for the performance evaluation tool
+      - name: Evaluate ram usage
+        id: monitor_ram
+        uses: nahloo-obi/githubaction/jsactions@v1.45
+        with:
+          benchmark: 100
+          
+      # Use the output from the `evaluate` step
+      - name: Get the output script result
+        run: echo "The ram monitoring output was ${{ steps.monitor_ram.outputs.performanceresult }}"
+
+
+
+
+
+
+
+
+
+      # # step to access the action for the performance evaluation tool
+      # - name: Evaluate Ram usage
+      #   id: monitor_ramm
+      #   uses: actions/checkout@v2
+      #   with:
+      #     repository: Weezeslim/monitor_application_performance
+      #     ref: main
+      #     path: .github/workflows/
+      #     process_id: ${{ steps.application_pid.outputs.application_process_id }}
+
+
+
+# name: external
+
+# on:
+#   push:
+#     branches:
+#       - main
+
+# jobs:
+#   use_external_workflow:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#     - name: Checkout repository
+#       uses: actions/checkout@v2
+
+#     - name: Python setup
+#       uses: actions/setup-python@v2
+#       with:
+#          python-version: '3.7.15'
+         
+#     # - name: Evaluate Ram usage
+#     #   id: external
+#     #   uses: actions/checkout@v2
+#     #   with:
+#     #     repository: Weezeslim/monitor_application_performance
+#     #     ref: main
+#     #     path: .github/workflows/
+#     #e
+    
+#   use-reusable-workflow:
+#     name: Use Reusable Workflow
+#     needs: use_external_workflow  # Specify the dependency
+#     uses: Weezeslim/monitor_application_performance/.github/workflows/django.yml@main
+        
+
+    
